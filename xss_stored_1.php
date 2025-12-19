@@ -36,23 +36,29 @@ function xss($data)
 
         case "0" : 
 
+            // Low security - only prevent SQL injection, no XSS protection
             $data = sqli_check_3($link, $data);
             break;
 
         case "1" :
 
+            // Medium security - prevent SQL injection and XSS
             $data = sqli_check_3($link, $data);
-            // $data = xss_check_4($data);
+            // Note: XSS encoding should be done at output time, not here
+            // This preserves the original data in the database
             break;
 
         case "2" :
 
+            // High security - full protection
             $data = sqli_check_3($link, $data);
-            // $data = xss_check_3($data);
+            // Note: XSS encoding should be done at output time, not here
+            // This preserves the original data in the database
             break;
 
         default :
 
+            // Default to high security SQL protection
             $data = sqli_check_3($link, $data);
             break;
 
@@ -66,6 +72,12 @@ if(isset($_POST["entry_add"]))
 {
 
     $entry = xss($_POST["entry"]);
+    
+    // Validate session data
+    if (!isset($_SESSION["login"]) || empty($_SESSION["login"])) {
+        die("Error: Invalid session. Please log in again.");
+    }
+    
     $owner = $_SESSION["login"];
 
     if($entry == "")
@@ -78,16 +90,24 @@ if(isset($_POST["entry_add"]))
     else            
     { 
 
-        $sql = "INSERT INTO blog (date, entry, owner) VALUES (now(),'" . $entry . "','" . $owner . "')";
+        $sql = "INSERT INTO blog (date, entry, owner) VALUES (now(), ?, ?)";
 
-        $recordset = $link->query($sql);
+        $stmt = $link->prepare($sql);
+        if (!$stmt) {
+            die("Error preparing statement: " . $link->error . "<br /><br />");
+        }
+        
+        $stmt->bind_param("ss", $entry, $owner);
+        $result = $stmt->execute();
 
-        if(!$recordset)
+        if(!$result)
         {
 
             die("Error: " . $link->error . "<br /><br />");
 
         }
+
+        $stmt->close();
 
         // Debugging
         // echo $sql;
@@ -103,17 +123,31 @@ else
 
     if(isset($_POST["entry_delete"]))
     {
+        
+        // Validate session data
+        if (!isset($_SESSION["login"]) || empty($_SESSION["login"])) {
+            die("Error: Invalid session. Please log in again.");
+        }
 
-        $sql = "DELETE from blog WHERE owner = '" . $_SESSION["login"] . "'";
+        $sql = "DELETE from blog WHERE owner = ?";
 
-        $recordset = $link->query($sql);
+        $stmt = $link->prepare($sql);
+        if (!$stmt) {
+            die("Error preparing statement: " . $link->error . "<br /><br />");
+        }
+        
+        $owner = $_SESSION["login"];
+        $stmt->bind_param("s", $owner);
+        $result = $stmt->execute();
 
-        if(!$recordset)
+        if(!$result)
         {
 
             die("Error: " . $link->error . "<br /><br />");
 
         }
+
+        $stmt->close();
 
         // Debugging
         // echo $sql;
@@ -245,12 +279,25 @@ else
 
 // Selects all the records
 
+// Validate session data
+if (!isset($_SESSION["login"]) || empty($_SESSION["login"])) {
+    die("Error: Invalid session. Please log in again.");
+}
+
 $entry_all = isset($_POST["entry_all"]) ? 1 : 0;
 
 if($entry_all == false)
 {
 
-	$sql = "SELECT * FROM blog WHERE owner = '" . $_SESSION["login"] . "'";
+	$sql = "SELECT * FROM blog WHERE owner = ?";
+	
+	$stmt = $link->prepare($sql);
+	if (!$stmt) {
+	    die("Error preparing statement: " . $link->error . "<br /><br />");
+	}
+	
+	$owner = $_SESSION["login"];
+	$stmt->bind_param("s", $owner);
 
 }
 
@@ -258,10 +305,16 @@ else
 {
 
 	$sql = "SELECT * FROM blog";
+	
+	$stmt = $link->prepare($sql);
+	if (!$stmt) {
+	    die("Error preparing statement: " . $link->error . "<br /><br />");
+	}
 
 }
 
-$recordset = $link->query($sql);
+$stmt->execute();
+$recordset = $stmt->get_result();
 
 if(!$recordset)
 {
@@ -332,10 +385,10 @@ while($row = $recordset->fetch_object())
 ?>
         <tr height="40">
 
-            <td align="center"><?php echo $row->id; ?></td>
-            <td><?php echo $row->owner; ?></td>
-            <td><?php echo $row->date; ?></td>
-            <td><?php echo $row->entry; ?></td>
+            <td align="center"><?php echo htmlspecialchars($row->id, ENT_QUOTES, 'UTF-8'); ?></td>
+            <td><?php echo htmlspecialchars($row->owner, ENT_QUOTES, 'UTF-8'); ?></td>
+            <td><?php echo htmlspecialchars($row->date, ENT_QUOTES, 'UTF-8'); ?></td>
+            <td><?php echo htmlspecialchars($row->entry, ENT_QUOTES, 'UTF-8'); ?></td>
 
         </tr>
 
@@ -345,6 +398,7 @@ while($row = $recordset->fetch_object())
 
 }      
 
+$stmt->close();
 $recordset->close();
 
 $link->close();

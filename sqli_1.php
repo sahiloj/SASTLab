@@ -20,7 +20,7 @@ include("security.php");
 include("security_level_check.php");
 include("selections.php");
 include("functions_external.php");
-include("connect.php");
+include("connect_i.php"); // Using mysqli instead of deprecated mysql
 
 function sqli($data)
 {
@@ -139,21 +139,33 @@ if(isset($_GET["title"]))
 {
 
     $title = $_GET["title"];
+    
+    // Escape LIKE special characters to prevent LIKE injection
+    $title = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $title);
 
-    $sql = "SELECT * FROM movies WHERE title LIKE '%" . sqli($title) . "%'";
-
-    $recordset = mysql_query($sql, $link);
+    // Use prepared statements to prevent SQL injection
+    $sql = "SELECT * FROM movies WHERE title LIKE ?";
+    
+    $stmt = $link->prepare($sql);
+    if (!$stmt) {
+        die("Error preparing statement: " . $link->error);
+    }
+    
+    $search_param = "%" . $title . "%";
+    $stmt->bind_param("s", $search_param);
+    $stmt->execute();
+    $recordset = $stmt->get_result();
 
     if(!$recordset)
     {
 
-        // die("Error: " . mysql_error());
+        // die("Error: " . $link->error);
 
 ?>
 
         <tr height="50">
 
-            <td colspan="5" width="580"><?php die("Error: " . mysql_error()); ?></td>
+            <td colspan="5" width="580"><?php die("Error: " . $link->error); ?></td>
             <!--
             <td></td>
             <td></td>
@@ -166,10 +178,10 @@ if(isset($_GET["title"]))
 
     }
 
-    if(mysql_num_rows($recordset) != 0)
+    if($recordset->num_rows != 0)
     {
 
-        while($row = mysql_fetch_array($recordset))         
+        while($row = $recordset->fetch_assoc())         
         {
 
             // print_r($row);
@@ -178,11 +190,11 @@ if(isset($_GET["title"]))
 
         <tr height="30">
 
-            <td><?php echo $row["title"]; ?></td>
-            <td align="center"><?php echo $row["release_year"]; ?></td>
-            <td><?php echo $row["main_character"]; ?></td>
-            <td align="center"><?php echo $row["genre"]; ?></td>
-            <td align="center"><a href="http://www.imdb.com/title/<?php echo $row["imdb"]; ?>" target="_blank">Link</a></td>
+            <td><?php echo htmlspecialchars($row["title"], ENT_QUOTES, 'UTF-8'); ?></td>
+            <td align="center"><?php echo htmlspecialchars($row["release_year"], ENT_QUOTES, 'UTF-8'); ?></td>
+            <td><?php echo htmlspecialchars($row["main_character"], ENT_QUOTES, 'UTF-8'); ?></td>
+            <td align="center"><?php echo htmlspecialchars($row["genre"], ENT_QUOTES, 'UTF-8'); ?></td>
+            <td align="center"><a href="http://www.imdb.com/title/<?php echo htmlspecialchars($row["imdb"], ENT_QUOTES, 'UTF-8'); ?>" target="_blank">Link</a></td>
 
         </tr>
 <?php
@@ -211,7 +223,8 @@ if(isset($_GET["title"]))
 
     }
 
-    mysql_close($link);
+    $stmt->close();
+    $link->close();
 
 }
 

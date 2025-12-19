@@ -26,44 +26,78 @@ if(isset($_POST["form"]))
     
     $file_error = "";
     
+    // Define allowed file types and maximum file size
+    $allowed_extensions = array("jpg", "jpeg", "png", "gif");
+    $max_file_size = 5242880; // 5MB in bytes
+    
+    // Get file information
+    $file_name = $_FILES["file"]["name"];
+    $file_size = $_FILES["file"]["size"];
+    $file_tmp = $_FILES["file"]["tmp_name"];
+    $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+    
+    // Validate file extension
+    if (!in_array($file_ext, $allowed_extensions)) {
+        $file_error = "Only JPG, JPEG, PNG, and GIF files are allowed.";
+    }
+    
+    // Validate file is not empty
+    if (empty($file_error) && $file_size == 0) {
+        $file_error = "File is empty or upload failed.";
+    }
+    
+    // Validate file size
+    if (empty($file_error) && $file_size > $max_file_size) {
+        $file_error = "File size must not exceed 5MB.";
+    }
+    
+    // Validate MIME type
+    if (empty($file_error)) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime_type = finfo_file($finfo, $file_tmp);
+        finfo_close($finfo);
+        
+        $allowed_mime_types = array("image/jpeg", "image/png", "image/gif");
+        if (!in_array($mime_type, $allowed_mime_types)) {
+            $file_error = "Invalid file type. Only image files are allowed.";
+        }
+    }
+    
+    // Generate a safe filename - strips all special characters except extension
+    $safe_filename = uniqid() . "_" . preg_replace("/[^a-zA-Z0-9_-]/", "", pathinfo($file_name, PATHINFO_FILENAME)) . "." . $file_ext;
+    
+    // Move the uploaded file only if no errors
+    if (empty($file_error)) {
+        $upload_path = "images/" . $safe_filename;
+        if (!move_uploaded_file($file_tmp, $upload_path)) {
+            $file_error = "Failed to upload file.";
+        }
+    }
+    
     switch($_COOKIE["security_level"])
     {
          
         case "0" : 
             
-            move_uploaded_file($_FILES["file"]["tmp_name"], "images/" . $_FILES["file"]["name"]);
+            // Legacy code - now properly secured above
             
             break;
         
         case "1" :
             
-            $file_error = file_upload_check_1($_FILES["file"]);
-            
-            if(!$file_error)
-            {
-                
-                move_uploaded_file($_FILES["file"]["tmp_name"], "images/" . $_FILES["file"]["name"]);
-    
-            }            
+            // Legacy code - now properly secured above
             
             break;
         
         case "2" :            
                        
-            $file_error = file_upload_check_2($_FILES["file"], array("jpg","png"));
-            
-            if(!$file_error)
-            {
-                
-                move_uploaded_file($_FILES["file"]["tmp_name"], "images/" . $_FILES["file"]["name"]);
-    
-            }            
+            // Legacy code - now properly secured above
             
             break;
         
         default : 
             
-            move_uploaded_file($_FILES["file"]["tmp_name"],"images/" . $_FILES["file"]["name"]);
+            // Legacy code - now properly secured above
             
             break;   
 
@@ -131,8 +165,8 @@ if(isset($_POST["form"]))
         <p><label for="file">Please upload an image:</label><br />
         <input type="file" name="file"></p>
 
-        <input type="hidden" name="MAX_FILE_SIZE" value="10">
-        <!-- <input type="hidden" name="MAX_FILE_SIZE" value="100000"> -->
+        <input type="hidden" name="MAX_FILE_SIZE" value="5242880">
+        <!-- Maximum file size: 5MB -->
 
         <input type="submit" name="form" value="Upload">
 
@@ -147,14 +181,14 @@ if(isset($_POST["form"]))
         if(!$file_error)
         {
 
-            echo "The image has been uploaded <a href=\"images/" . $_FILES["file"]["name"] . "\" target=\"_blank\">here</a>.";
+            echo "The image has been uploaded <a href=\"images/" . htmlspecialchars($safe_filename, ENT_QUOTES, 'UTF-8') . "\" target=\"_blank\">here</a>.";
 
         }
 
         else
         {
 
-            echo "<font color=\"red\">" . $file_error . "</font>";        
+            echo "<font color=\"red\">" . htmlspecialchars($file_error, ENT_QUOTES, 'UTF-8') . "</font>";        
 
         }
 

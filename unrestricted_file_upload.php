@@ -41,22 +41,29 @@ if(isset($_POST["form"]))
         $file_error = "Only JPG, JPEG, PNG, and GIF files are allowed.";
     }
     
+    // Validate file is not empty
+    if (empty($file_error) && $file_size == 0) {
+        $file_error = "File is empty or upload failed.";
+    }
+    
     // Validate file size
-    if ($file_size > $max_file_size) {
+    if (empty($file_error) && $file_size > $max_file_size) {
         $file_error = "File size must not exceed 5MB.";
     }
     
     // Validate MIME type
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mime_type = finfo_file($finfo, $file_tmp);
-    finfo_close($finfo);
-    
-    $allowed_mime_types = array("image/jpeg", "image/png", "image/gif");
-    if (!in_array($mime_type, $allowed_mime_types)) {
-        $file_error = "Invalid file type. Only image files are allowed.";
+    if (empty($file_error)) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime_type = finfo_file($finfo, $file_tmp);
+        finfo_close($finfo);
+        
+        $allowed_mime_types = array("image/jpeg", "image/png", "image/gif");
+        if (!in_array($mime_type, $allowed_mime_types)) {
+            $file_error = "Invalid file type. Only image files are allowed.";
+        }
     }
     
-    // Generate a unique, safe filename (no dots to prevent double extension attacks)
+    // Generate a safe filename - strips all special characters except extension
     $safe_filename = uniqid() . "_" . preg_replace("/[^a-zA-Z0-9_-]/", "", pathinfo($file_name, PATHINFO_FILENAME)) . "." . $file_ext;
     
     // Move the uploaded file only if no errors

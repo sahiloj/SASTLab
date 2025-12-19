@@ -36,29 +36,30 @@ function xss($data)
 
         case "0" : 
 
-            // Low security - only prevent SQL injection
+            // Low security - only prevent SQL injection, no XSS protection
             $data = sqli_check_3($link, $data);
             break;
 
         case "1" :
 
-            // Medium security - prevent SQL injection, basic XSS filtering
+            // Medium security - prevent SQL injection and XSS
             $data = sqli_check_3($link, $data);
-            $data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
+            // Note: XSS encoding should be done at output time, not here
+            // This preserves the original data in the database
             break;
 
         case "2" :
 
-            // High security - full sanitization
+            // High security - full protection
             $data = sqli_check_3($link, $data);
-            $data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
+            // Note: XSS encoding should be done at output time, not here
+            // This preserves the original data in the database
             break;
 
         default :
 
-            // Default to high security
+            // Default to high security SQL protection
             $data = sqli_check_3($link, $data);
-            $data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
             break;
 
     }
@@ -71,6 +72,12 @@ if(isset($_POST["entry_add"]))
 {
 
     $entry = xss($_POST["entry"]);
+    
+    // Validate session data
+    if (!isset($_SESSION["login"]) || empty($_SESSION["login"])) {
+        die("Error: Invalid session. Please log in again.");
+    }
+    
     $owner = $_SESSION["login"];
 
     if($entry == "")
@@ -116,6 +123,11 @@ else
 
     if(isset($_POST["entry_delete"]))
     {
+        
+        // Validate session data
+        if (!isset($_SESSION["login"]) || empty($_SESSION["login"])) {
+            die("Error: Invalid session. Please log in again.");
+        }
 
         $sql = "DELETE from blog WHERE owner = ?";
 
@@ -266,6 +278,11 @@ else
 <?php
 
 // Selects all the records
+
+// Validate session data
+if (!isset($_SESSION["login"]) || empty($_SESSION["login"])) {
+    die("Error: Invalid session. Please log in again.");
+}
 
 $entry_all = isset($_POST["entry_all"]) ? 1 : 0;
 

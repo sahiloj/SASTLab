@@ -31,6 +31,9 @@ function xss($data)
     
     include("connect_i.php");
 
+    // Always sanitize input to prevent XSS attacks
+    $data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
+    
     switch($_COOKIE["security_level"])
     {
 
@@ -66,7 +69,7 @@ if(isset($_POST["entry_add"]))
 {
 
     $entry = xss($_POST["entry"]);
-    $owner = $_SESSION["login"];
+    $owner = htmlspecialchars($_SESSION["login"], ENT_QUOTES, 'UTF-8');
 
     if($entry == "")
     {
@@ -78,16 +81,24 @@ if(isset($_POST["entry_add"]))
     else            
     { 
 
-        $sql = "INSERT INTO blog (date, entry, owner) VALUES (now(),'" . $entry . "','" . $owner . "')";
+        $sql = "INSERT INTO blog (date, entry, owner) VALUES (now(), ?, ?)";
 
-        $recordset = $link->query($sql);
+        $stmt = $link->prepare($sql);
+        if (!$stmt) {
+            die("Error preparing statement: " . $link->error . "<br /><br />");
+        }
+        
+        $stmt->bind_param("ss", $entry, $owner);
+        $result = $stmt->execute();
 
-        if(!$recordset)
+        if(!$result)
         {
 
             die("Error: " . $link->error . "<br /><br />");
 
         }
+
+        $stmt->close();
 
         // Debugging
         // echo $sql;
@@ -104,16 +115,25 @@ else
     if(isset($_POST["entry_delete"]))
     {
 
-        $sql = "DELETE from blog WHERE owner = '" . $_SESSION["login"] . "'";
+        $sql = "DELETE from blog WHERE owner = ?";
 
-        $recordset = $link->query($sql);
+        $stmt = $link->prepare($sql);
+        if (!$stmt) {
+            die("Error preparing statement: " . $link->error . "<br /><br />");
+        }
+        
+        $owner = htmlspecialchars($_SESSION["login"], ENT_QUOTES, 'UTF-8');
+        $stmt->bind_param("s", $owner);
+        $result = $stmt->execute();
 
-        if(!$recordset)
+        if(!$result)
         {
 
             die("Error: " . $link->error . "<br /><br />");
 
         }
+
+        $stmt->close();
 
         // Debugging
         // echo $sql;
@@ -250,7 +270,15 @@ $entry_all = isset($_POST["entry_all"]) ? 1 : 0;
 if($entry_all == false)
 {
 
-	$sql = "SELECT * FROM blog WHERE owner = '" . $_SESSION["login"] . "'";
+	$sql = "SELECT * FROM blog WHERE owner = ?";
+	
+	$stmt = $link->prepare($sql);
+	if (!$stmt) {
+	    die("Error preparing statement: " . $link->error . "<br /><br />");
+	}
+	
+	$owner = htmlspecialchars($_SESSION["login"], ENT_QUOTES, 'UTF-8');
+	$stmt->bind_param("s", $owner);
 
 }
 
@@ -258,10 +286,16 @@ else
 {
 
 	$sql = "SELECT * FROM blog";
+	
+	$stmt = $link->prepare($sql);
+	if (!$stmt) {
+	    die("Error preparing statement: " . $link->error . "<br /><br />");
+	}
 
 }
 
-$recordset = $link->query($sql);
+$stmt->execute();
+$recordset = $stmt->get_result();
 
 if(!$recordset)
 {
@@ -332,10 +366,10 @@ while($row = $recordset->fetch_object())
 ?>
         <tr height="40">
 
-            <td align="center"><?php echo $row->id; ?></td>
-            <td><?php echo $row->owner; ?></td>
-            <td><?php echo $row->date; ?></td>
-            <td><?php echo $row->entry; ?></td>
+            <td align="center"><?php echo htmlspecialchars($row->id, ENT_QUOTES, 'UTF-8'); ?></td>
+            <td><?php echo htmlspecialchars($row->owner, ENT_QUOTES, 'UTF-8'); ?></td>
+            <td><?php echo htmlspecialchars($row->date, ENT_QUOTES, 'UTF-8'); ?></td>
+            <td><?php echo htmlspecialchars($row->entry, ENT_QUOTES, 'UTF-8'); ?></td>
 
         </tr>
 
@@ -345,6 +379,7 @@ while($row = $recordset->fetch_object())
 
 }      
 
+$stmt->close();
 $recordset->close();
 
 $link->close();

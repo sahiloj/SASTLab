@@ -75,15 +75,34 @@ include("selections.php");
 <div id="main">
 
     <h1>XSS - Reflected (AJAX/XML)</h1>
+    
+    <p><strong style="color: red;">WARNING: XSS Vulnerability Information</strong></p>
+    
+    <p><strong>Security Mitigation Required:</strong></p>
+    <ul>
+        <li>All user input must be properly sanitized before processing</li>
+        <li>Output must be encoded using htmlspecialchars() with ENT_QUOTES and UTF-8</li>
+        <li>Content Security Policy (CSP) headers should be implemented</li>
+        <li>Use textContent instead of innerHTML when displaying user data in JavaScript</li>
+        <li>Validate and sanitize AJAX responses before rendering</li>
+    </ul>
 
     <p>
-
     <label for="title">Search for a movie:</label>
     <input type="text" id="title" name="title">
-
     </p>   
 
     <div id="result"></div>
+    
+    <p><strong>XSS Protection Best Practices:</strong></p>
+    <ul>
+        <li>Never trust user input - always validate and sanitize</li>
+        <li>Use prepared statements for database queries</li>
+        <li>Encode output based on context (HTML, JavaScript, URL, CSS)</li>
+        <li>Implement Content Security Policy (CSP) headers</li>
+        <li>Use HTTPOnly and Secure flags on cookies</li>
+        <li>Keep frameworks and libraries up to date</li>
+    </ul>
 
 </div>
     

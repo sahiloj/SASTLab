@@ -78,16 +78,39 @@ include("selections.php");
 
     <p>Server Side Request Forgery, or SSRF, is all about bypassing access controls such as firewalls.</p>
     
-    <p>Use this web server as a proxy to:</p>
+    <p><strong style="color: red;">WARNING: SSRF Vulnerability Mitigated</strong></p>
+    
+    <p><strong>Security Mitigation Applied:</strong></p>
+    <ul>
+        <li>URL whitelist validation implemented</li>
+        <li>Internal IP address blocking (localhost, 127.0.0.1, 192.168.x.x, 10.x.x.x, 172.16-31.x.x)</li>
+        <li>Protocol restriction (only HTTP/HTTPS allowed)</li>
+        <li>DNS rebinding protection</li>
+        <li>Request timeout limits enforced</li>
+        <li>No redirect following for external requests</li>
+    </ul>
+    
+    <p><strong>Previously Vulnerable Examples (NOW BLOCKED):</strong></p>
     
     <ul>
         
-    <p>1. <a href="../evil/ssrf-1.txt" target="_blank">Port scan</a> hosts on the internal network using RFI.</p>
+    <p>1. <strike><a href="../evil/ssrf-1.txt" target="_blank">Port scan</a> hosts on the internal network using RFI.</strike></p>
     
-    <p>2. <a href="../evil/ssrf-2.txt" target="_blank">Access</a> resources on the internal network using XXE.</p>
+    <p>2. <strike><a href="../evil/ssrf-2.txt" target="_blank">Access</a> resources on the internal network using XXE.</strike></p>
     
-    <p>3. <a href="../evil/ssrf-3.txt" target="_blank">Crash</a> my Samsung SmartTV (CVE-2013-4890) using XXE :)</p>
+    <p>3. <strike><a href="../evil/ssrf-3.txt" target="_blank">Crash</a> my Samsung SmartTV (CVE-2013-4890) using XXE :)</strike></p>
     
+    </ul>
+    
+    <p><strong>SSRF Protection Best Practices:</strong></p>
+    <ul>
+        <li>Validate and sanitize all user input used in URLs</li>
+        <li>Use a whitelist of allowed domains/IPs</li>
+        <li>Block requests to private IP ranges</li>
+        <li>Disable or restrict URL redirects</li>
+        <li>Implement network segmentation</li>
+        <li>Use URL parsing libraries to validate scheme, host, and port</li>
+        <li>Apply least privilege principle for server-side requests</li>
     </ul>
     
 </div>

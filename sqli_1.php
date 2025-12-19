@@ -139,6 +139,9 @@ if(isset($_GET["title"]))
 {
 
     $title = $_GET["title"];
+    
+    // Escape LIKE special characters to prevent LIKE injection
+    $title = str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $title);
 
     // Use prepared statements to prevent SQL injection
     $sql = "SELECT * FROM movies WHERE title LIKE ?";

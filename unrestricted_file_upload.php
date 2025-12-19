@@ -56,8 +56,8 @@ if(isset($_POST["form"]))
         $file_error = "Invalid file type. Only image files are allowed.";
     }
     
-    // Generate a unique, safe filename
-    $safe_filename = uniqid() . "_" . preg_replace("/[^a-zA-Z0-9._-]/", "", basename($file_name));
+    // Generate a unique, safe filename (no dots to prevent double extension attacks)
+    $safe_filename = uniqid() . "_" . preg_replace("/[^a-zA-Z0-9_-]/", "", pathinfo($file_name, PATHINFO_FILENAME)) . "." . $file_ext;
     
     // Move the uploaded file only if no errors
     if (empty($file_error)) {

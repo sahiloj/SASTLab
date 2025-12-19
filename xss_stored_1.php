@@ -31,32 +31,34 @@ function xss($data)
     
     include("connect_i.php");
 
-    // Always sanitize input to prevent XSS attacks
-    $data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
-    
     switch($_COOKIE["security_level"])
     {
 
         case "0" : 
 
+            // Low security - only prevent SQL injection
             $data = sqli_check_3($link, $data);
             break;
 
         case "1" :
 
+            // Medium security - prevent SQL injection, basic XSS filtering
             $data = sqli_check_3($link, $data);
-            // $data = xss_check_4($data);
+            $data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
             break;
 
         case "2" :
 
+            // High security - full sanitization
             $data = sqli_check_3($link, $data);
-            // $data = xss_check_3($data);
+            $data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
             break;
 
         default :
 
+            // Default to high security
             $data = sqli_check_3($link, $data);
+            $data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
             break;
 
     }
@@ -69,7 +71,7 @@ if(isset($_POST["entry_add"]))
 {
 
     $entry = xss($_POST["entry"]);
-    $owner = htmlspecialchars($_SESSION["login"], ENT_QUOTES, 'UTF-8');
+    $owner = $_SESSION["login"];
 
     if($entry == "")
     {
@@ -122,7 +124,7 @@ else
             die("Error preparing statement: " . $link->error . "<br /><br />");
         }
         
-        $owner = htmlspecialchars($_SESSION["login"], ENT_QUOTES, 'UTF-8');
+        $owner = $_SESSION["login"];
         $stmt->bind_param("s", $owner);
         $result = $stmt->execute();
 
@@ -277,7 +279,7 @@ if($entry_all == false)
 	    die("Error preparing statement: " . $link->error . "<br /><br />");
 	}
 	
-	$owner = htmlspecialchars($_SESSION["login"], ENT_QUOTES, 'UTF-8');
+	$owner = $_SESSION["login"];
 	$stmt->bind_param("s", $owner);
 
 }
